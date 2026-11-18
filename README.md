@@ -38,6 +38,24 @@ subject IDs never reach this public repo. Re-run `./setup_env.sh` after pulling 
 
 Reusable code lives in `src/ocs/` (`discover.py`, `motion.py`, `roi.py`).
 
+## Combining runs (run-01 + run-02)
+
+`scripts/combine_runs.py` concatenates each session's rest runs for sessions that
+XCP-D did not already combine, following XCP-D 0.6.0's own concatenation (run entity
+dropped from names; dtseries/ptseries/TSVs stacked in run order; conmats recomputed from
+the combined parcel time series). DCAN HDF5 and QC CSVs are not combined; motion QC
+stays per run.
+
+```bash
+python scripts/combine_runs.py                 # dry run: status of every session
+python scripts/combine_runs.py --run           # write to derivatives/xcp_d_combined/
+python scripts/combine_runs.py --run --run-qc notebooks/dfs/run_qc.csv   # usable runs only
+```
+
+The XCP-D folder is never modified. Existing outputs are not overwritten (`--overwrite`
+to force). Each output gets a JSON sidecar listing its source files, and a log CSV is
+written to the output folder.
+
 ## Data paths
 
 The XCP-D derivatives path defaults to the Synology mount on cortex. Override
