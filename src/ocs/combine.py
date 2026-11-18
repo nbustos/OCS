@@ -55,8 +55,8 @@ def _action(suffix: str) -> str:
     return "skip"
 
 
-# Files only written by XCP-D versions newer than 0.6 (0.6 writes none of these per run)
-NEWER_XCPD_MARKERS = ("design.tsv", ".pconn.nii")
+# Extra outputs seen in sessions processed elsewhere (different XCP-D settings); flagged in the note only
+EXTRA_OUTPUT_MARKERS = ("design.tsv", ".pconn.nii")
 
 
 def runless_kind(dtseries: Path) -> str:
@@ -94,10 +94,6 @@ def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path 
     single_run_unlabeled: a run-less denoised dtseries exists but was built from ONE unlabeled run
                           (newer XCP-D on a session with a single rest run); any run-labelled files
                           next to it are leftovers from an earlier XCP-D run. Not combined.
-    newer_xcpd:           >= 2 runs, but processed by an XCP-D newer than 0.6 (design.tsv / ReHo /
-                          pconn present). Not combined: newer versions can keep (interpolated)
-                          high-motion frames in the denoised data and censor later, so 0.6-style
-                          concatenation + conmat may not match; check before handling these.
     to_combine:           >= 2 eligible runs (denoised dtseries present, and in ``usable`` if given).
     single_run:           only one eligible run; nothing to combine.
     incomplete:           no run has a denoised dtseries.
@@ -124,7 +120,7 @@ def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path 
         kinds = [runless_kind(c) for c in candidates if c.exists()]
         eligible = sorted(r for r, s in by_run.items() if DENOISED in s
                           and (usable is None or (sub, ses, r) in usable))
-        newer = sorted(r for r in eligible if any(x.endswith(NEWER_XCPD_MARKERS) for x in by_run[r]))
+        extra = sorted(r for r in eligible if any(x.endswith(EXTRA_OUTPUT_MARKERS) for x in by_run[r]))
         dropped = sorted(set(by_run) - set(eligible))
         notes = [f"runs not used: {','.join(dropped)}"] if dropped else []
         if kinds and all(k == "single" for k in kinds):
@@ -134,11 +130,10 @@ def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path 
             status = "already_combined"
             if "unknown" in kinds:
                 notes.append("run-less denoised has no readable sidecar")
-        elif len(eligible) >= 2 and newer:
-            status = "newer_xcpd"
-            notes.append(f"runs {','.join(newer)} processed by XCP-D > 0.6; not combined")
         elif len(eligible) >= 2:
             status = "to_combine"
+            if extra:
+                notes.append("extra XCP-D outputs (design/pconn): processed with other settings")
         elif len(eligible) == 1:
             status = "single_run"
         else:

@@ -64,8 +64,7 @@ a hidden temp name and linked into place, which fails if the target exists (on s
 without hard links, an exclusive create is used instead). Sessions XCP-D already combined
 are skipped. A run-less denoised file is only treated as "already combined" if its sidecar lists
 ≥ 2 runs; one built from a single unlabeled run (or with run-less ReHo next to it) is reported as
-`single_run_unlabeled`. Sessions processed by an XCP-D newer than 0.6 (`design.tsv`/`.pconn.nii`
-present) are reported as `newer_xcpd` and not combined. The combined denoised dtseries is written last, so an interrupted session is
+`single_run_unlabeled`. The combined denoised dtseries is written last, so an interrupted session is
 resumed on the next run (missing files only). Each output gets a JSON sidecar listing its
 source files; a log CSV goes to `logs/` (git-ignored).
 
