@@ -29,6 +29,8 @@ conda activate ocs
 3. Motion QC from the DCAN HDF5 files and run/session inclusion
 4. ROI QC for seed ROIs (coverage, signal amplitude, homogeneity, global-signal coupling, tSNR)
 5. Final analysis sample (`dfs/final_sample.csv`, `dfs/run_qc.csv`)
+6. One analysis input per session (`dfs/analysis_inputs.csv`): the combined-runs file by default,
+   or the best single run by motion with `SESSION_INPUT = 'best_run'` (CELL 1)
 
 QC thresholds are set in CELL 1 (and CELL 10 for ROI). Tables go to `notebooks/dfs/`
 and figures to `notebooks/figures/`; both are git-ignored. **Notebook outputs are
