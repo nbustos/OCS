@@ -2,7 +2,8 @@
 
 Mirrors XCP-D 0.6.0's own concatenation (``xcp_d/workflows/concatenation.py``):
 - output names drop the run entity (``re.sub("_run-[0-9]+_", "_", name)``)
-- CIFTI (dtseries / ptseries) and TSV files are concatenated in run order, no rescaling
+- CIFTI (dtseries / ptseries) merged in run order with ``wb_command -cifti-merge`` (nibabel fallback);
+  TSVs stacked with pandas, written without na_rep, exactly as XCP-D's ``concatenate_tsvs``
 - ``*_conmat.tsv`` is recomputed as ``DataFrame.corr()`` of the concatenated parcel time series
 - only runs with a denoised dtseries are used (XCP-D drops failed runs)
 Files that cannot be concatenated meaningfully (DCAN HDF5, QC CSVs, figures, JSON) are skipped.
@@ -14,6 +15,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -131,6 +133,12 @@ def _write_new(out: Path, writer) -> None:
 
 
 def _concat_cifti(paths: list[Path], out: Path) -> dict:
+    """Concatenate CIFTI files over time.
+
+    XCP-D 0.6.0 runs ``wb_command -cifti-merge out -cifti a -cifti b``; that is used here too when
+    ``wb_command`` is on PATH. Otherwise the same concatenation is done in nibabel (identical data
+    and brain models; only Workbench's provenance metadata in the header differs).
+    """
     imgs = [nib.load(str(p)) for p in paths]
     ax0 = [im.header.get_axis(0) for im in imgs]
     ax1 = [im.header.get_axis(1) for im in imgs]
@@ -139,17 +147,34 @@ def _concat_cifti(paths: list[Path], out: Path) -> dict:
     steps = {round(float(a.step), 6) for a in ax0}
     if len(steps) != 1:
         raise ValueError(f"TR differs across runs {steps}: {[p.name for p in paths]}")
-    data = np.vstack([np.asarray(im.dataobj, dtype=np.float32) for im in imgs])
-    series = nib.cifti2.SeriesAxis(start=0.0, step=ax0[0].step, size=data.shape[0], unit=ax0[0].unit)
-    _write_new(out, lambda t: nib.Cifti2Image(data, (series, ax1[0])).to_filename(str(t)))
-    return {"n_frames_per_run": [int(a.size) for a in ax0], "RepetitionTime": float(ax0[0].step)}
+    n_total = sum(int(a.size) for a in ax0)
+    wb = shutil.which("wb_command")
+
+    def writer(t: Path):
+        if wb:
+            cmd = [wb, "-cifti-merge", str(t)]
+            for p in paths:
+                cmd += ["-cifti", str(p)]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+        else:
+            data = np.vstack([np.asarray(im.dataobj, dtype=np.float32) for im in imgs])
+            series = nib.cifti2.SeriesAxis(start=ax0[0].start, step=ax0[0].step, size=data.shape[0], unit=ax0[0].unit)
+            nib.Cifti2Image(data, (series, ax1[0])).to_filename(str(t))
+        chk = nib.load(str(t))
+        if chk.shape != (n_total, ax1[0].size) or chk.header.get_axis(1) != ax1[0]:
+            raise RuntimeError(f"Concatenated CIFTI has shape {chk.shape}, expected {(n_total, ax1[0].size)}")
+
+    _write_new(out, writer)
+    return {"n_frames_per_run": [int(a.size) for a in ax0], "RepetitionTime": float(ax0[0].step),
+            "Method": "wb_command -cifti-merge" if wb else "nibabel (wb_command not on PATH)"}
 
 
 def _concat_tsv(paths: list[Path], out: Path) -> dict:
     dfs = [pd.read_table(p) for p in paths]
     if any(list(d.columns) != list(dfs[0].columns) for d in dfs[1:]):
         raise ValueError(f"Columns differ across runs: {[p.name for p in paths]}")
-    _write_new(out, lambda t: pd.concat(dfs, axis=0).to_csv(t, sep="\t", index=False, na_rep="n/a"))
+    # XCP-D 0.6.0 concatenate_tsvs: pd.concat + to_csv(sep="\t", index=False), no na_rep
+    _write_new(out, lambda t: pd.concat(dfs, axis=0).to_csv(t, sep="\t", index=False))
     return {"n_rows_per_run": [len(d) for d in dfs]}
 
 
