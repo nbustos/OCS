@@ -50,12 +50,13 @@ stays per run.
 python scripts/combine_runs.py                 # dry run: status of every session
 python scripts/combine_runs.py --run           # write combined files into xcp_d/ (next to the runs)
 python scripts/combine_runs.py --run --run-qc notebooks/dfs/run_qc.csv   # usable runs only
-python scripts/combine_runs.py --test --run    # test mode: first 10 subjects -> test_output/xcp_d/
+python scripts/combine_runs.py --test -v       # test mode: first 10 subjects, list every file
+python scripts/combine_runs.py --test --run    # combine only the first 10 subjects
 ```
 
-**Test mode** (`--test`, or `--test N` for N subjects) processes only the first 10 subjects
-(sorted by ID) and writes to `test_output/xcp_d/` in the repo (git-ignored) unless `--out-dir`
-is given, so `xcp_d/` is untouched. It is still a dry run without `--run`.
+**Test mode** (`--test`, or `--test N`) processes only the first 10 subjects (sorted by ID),
+writing into `xcp_d/` like a full run; a later full run skips them. `-v` lists each file and
+its action.
 
 Combined files are added to the XCP-D `func/` folders with XCP-D's own run-less names
 (`--out-dir` to write elsewhere). **Nothing is ever overwritten**: each file is written to

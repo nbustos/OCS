@@ -30,5 +30,3 @@ notebooks/figures/
 # Script logs (contain subject IDs)
 logs/
 
-# combine_runs.py --test outputs
-test_output/

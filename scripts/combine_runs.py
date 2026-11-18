@@ -8,8 +8,8 @@ Examples (on cortex, `conda activate ocs`):
     python scripts/combine_runs.py --run                 # write combined files into the XCP-D folder
     python scripts/combine_runs.py --run --run-qc notebooks/dfs/run_qc.csv   # only QC-usable runs
     python scripts/combine_runs.py --run --subject marsonc1001 --subject marsonc1003
-    python scripts/combine_runs.py --test --run          # first 10 subjects -> <repo>/test_output/xcp_d
-    python scripts/combine_runs.py --test 3 --run --out-dir /path/to/scratch
+    python scripts/combine_runs.py --test -v             # first 10 subjects, list every file
+    python scripts/combine_runs.py --test --run          # combine the first 10 subjects (into xcp_d/)
 
 Outputs mirror XCP-D 0.6.0 concatenation: run entity dropped from names, CIFTI/TSV files
 concatenated in run order, conmats recomputed from the combined parcel time series.
@@ -39,13 +39,14 @@ def main(argv=None):
     ap.add_argument("--run-qc", type=Path, help="run_qc.csv from the main notebook; only runs with usable==True are combined")
     ap.add_argument("--run", action="store_true", help="actually write files (default: dry run)")
     ap.add_argument("--test", nargs="?", type=int, const=10, metavar="N",
-                    help="test mode: only the first N subjects (default 10, sorted by ID); outputs go to "
-                         "<repo>/test_output/xcp_d unless --out-dir is given, so xcp_d/ is not touched")
+                    help="test mode: only the first N subjects (default 10, sorted by ID)")
+    ap.add_argument("-v", "--verbose", action="store_true",
+                    help="list every file per session to combine, with its action")
     a = ap.parse_args(argv)
 
     if a.test is not None and a.test < 1:
         ap.error("--test N must be >= 1")
-    out_dir = a.out_dir or (REPO_DIR / "test_output" / "xcp_d" if a.test else a.xcpd_dir)
+    out_dir = a.out_dir or a.xcpd_dir
     usable = None
     if a.run_qc:
         q = pd.read_csv(a.run_qc, dtype={"subject": str, "session": str, "run": str})
@@ -73,6 +74,11 @@ def main(argv=None):
     if todo:
         actions = pd.Series([v for p in todo for v in p.suffixes.values()]).value_counts()
         print(f"\nPer session to combine ({len(todo)} sessions), file actions:\n" + actions.to_string())
+    if a.verbose:
+        for p in todo:
+            print(f"\nsub-{p.subject} ses-{p.session} (runs {','.join(p.runs)}):")
+            for suffix, action in p.suffixes.items():
+                print(f"   {action:13s} {suffix}")
     if not a.run:
         print("\nDry run - nothing written. Re-run with --run to combine.")
         return
