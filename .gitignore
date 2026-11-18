@@ -20,3 +20,6 @@ dfs/
 *.hdf5
 *.h5
 *.parquet
+
+# Shared reference resources (public atlases, figures, summary tables) are tracked
+!resources/**
