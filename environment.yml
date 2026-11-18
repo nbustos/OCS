@@ -1,0 +1,35 @@
+# OCS resting-state analysis environment.
+# Baseline = rsx env from rsX-Analyzer, plus CIFTI / seed-based connectivity tools.
+# Create or update with:  ./setup_env.sh
+name: ocs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  # --- rsx baseline ---
+  - numpy
+  - pandas
+  - h5py
+  - openpyxl
+  - matplotlib
+  - scipy
+  - seaborn
+  - statsmodels
+  - ipykernel
+  - jupyter
+  - nibabel
+  - nilearn
+  - networkx
+  - scikit-image
+  # --- OCS additions ---
+  - templateflow        # MNI / fsLR templates and surfaces
+  - pingouin            # stats (paired tests, ICC, mixed ANOVA)
+  - pyyaml
+  - tqdm
+  - pip
+  - pip:
+      - netplotbrain>=0.3
+      - brainspace>=0.3
+      - surfplot>=0.2   # fsLR surface plotting of dscalar maps
+      # rsx-analyzer is installed by setup_env.sh (from GitHub, or editable from RSX_PATH)
+      # the local ocs package is installed editable by setup_env.sh

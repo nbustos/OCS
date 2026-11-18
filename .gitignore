@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+.jupyter_ystore.db
+
+# Never commit participant data or derived outputs
+data/
+derivatives/
+outputs/
+dfs/
+*.nii
+*.nii.gz
+*.gii
+*.tsv
+*.csv
+*.xlsx
+*.hdf5
+*.h5
+*.parquet
