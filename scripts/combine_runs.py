@@ -8,6 +8,8 @@ Examples (on cortex, `conda activate ocs`):
     python scripts/combine_runs.py --run                 # write combined files into the XCP-D folder
     python scripts/combine_runs.py --run --run-qc notebooks/dfs/run_qc.csv   # only QC-usable runs
     python scripts/combine_runs.py --run --subject marsonc1001 --subject marsonc1003
+    python scripts/combine_runs.py --test --run          # first 10 subjects -> <repo>/test_output/xcp_d
+    python scripts/combine_runs.py --test 3 --run --out-dir /path/to/scratch
 
 Outputs mirror XCP-D 0.6.0 concatenation: run entity dropped from names, CIFTI/TSV files
 concatenated in run order, conmats recomputed from the combined parcel time series.
@@ -36,9 +38,14 @@ def main(argv=None):
     ap.add_argument("--subject", action="append", help="limit to subject label(s), without 'sub-'")
     ap.add_argument("--run-qc", type=Path, help="run_qc.csv from the main notebook; only runs with usable==True are combined")
     ap.add_argument("--run", action="store_true", help="actually write files (default: dry run)")
+    ap.add_argument("--test", nargs="?", type=int, const=10, metavar="N",
+                    help="test mode: only the first N subjects (default 10, sorted by ID); outputs go to "
+                         "<repo>/test_output/xcp_d unless --out-dir is given, so xcp_d/ is not touched")
     a = ap.parse_args(argv)
 
-    out_dir = a.out_dir or a.xcpd_dir
+    if a.test is not None and a.test < 1:
+        ap.error("--test N must be >= 1")
+    out_dir = a.out_dir or (REPO_DIR / "test_output" / "xcp_d" if a.test else a.xcpd_dir)
     usable = None
     if a.run_qc:
         q = pd.read_csv(a.run_qc, dtype={"subject": str, "session": str, "run": str})
@@ -48,6 +55,10 @@ def main(argv=None):
     plans = plan_sessions(a.xcpd_dir, a.task, out_dir, usable)
     if a.subject:
         plans = [p for p in plans if p.subject in set(a.subject)]
+    if a.test:
+        keep = sorted({p.subject for p in plans})[:a.test]
+        plans = [p for p in plans if p.subject in set(keep)]
+        print(f"TEST MODE: {len(keep)} subjects ({', '.join(keep)})")
     if not plans:
         sys.exit(f"No task-{a.task} sessions found under {a.xcpd_dir}")
 
@@ -78,7 +89,8 @@ def main(argv=None):
     log = pd.DataFrame(rows)
     log_dir = REPO_DIR / "logs"
     log_dir.mkdir(exist_ok=True)
-    log_path = log_dir / f"combine_runs_log_{dt.datetime.now():%Y%m%d_%H%M%S}.csv"
+    tag = "_test" if a.test else ""
+    log_path = log_dir / f"combine_runs{tag}_log_{dt.datetime.now():%Y%m%d_%H%M%S}.csv"
     log.to_csv(log_path, index=False)
     print(f"\nDone. {int((log.action == 'ERROR').sum())} errors. Log: {log_path}")
     print(log.action.value_counts().to_string())
