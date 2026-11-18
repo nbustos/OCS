@@ -40,7 +40,7 @@ class SessionPlan:
     func_dir: Path
     prefix: str                                  # sub-X_ses-Y_task-T
     runs: list[str]                              # run labels used, sorted
-    status: str                                  # already_combined | to_combine | single_run | incomplete
+    status: str                                  # see plan_sessions
     suffixes: dict[str, str] = field(default_factory=dict)   # suffix -> action (concat_cifti/concat_tsv/conmat/skip)
     note: str = ""
 
@@ -55,13 +55,52 @@ def _action(suffix: str) -> str:
     return "skip"
 
 
+# Files only written by XCP-D versions newer than 0.6 (0.6 writes none of these per run)
+NEWER_XCPD_MARKERS = ("design.tsv", ".pconn.nii")
+
+
+def runless_kind(dtseries: Path) -> str:
+    """What a run-less denoised dtseries is, from its JSON sidecar's ``Sources``.
+
+    'combined'  - built from >= 2 BOLD inputs (XCP-D concatenation, or this script)
+    'single'    - built from one BOLD input without a run entity (session had one unlabeled run)
+    'unknown'   - cannot tell
+
+    Without a sidecar (XCP-D 0.6 does not always write one), a run-less ReHo map next to it means
+    'single': XCP-D 0.6.0 computes ReHo per run only, never for concatenated runs.
+    """
+    js = dtseries.with_name(dtseries.name.split(".")[0] + ".json")
+    try:
+        sources = json.loads(js.read_text()).get("Sources", [])
+    except (OSError, ValueError):
+        sources = []
+    bold = [x for x in sources if str(x).endswith(("_bold.dtseries.nii", "_bold.nii.gz"))]
+    if len(bold) >= 2 or any("_run-" in str(x) for x in bold):
+        return "combined"
+    if len(bold) == 1:
+        return "single"
+    prefix = dtseries.name.split("_space-")[0]
+    if any(p.name.startswith(prefix + "_") and "_reho." in p.name for p in dtseries.parent.iterdir()):
+        return "single"
+    return "unknown"
+
+
 def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path | None = None,
                   usable: set[tuple[str, str, str]] | None = None) -> list[SessionPlan]:
     """Inspect every session and decide what to do.
 
-    already_combined: a run-less denoised dtseries exists in xcpd_dir or out_dir.
-    to_combine:       >= 2 eligible runs (denoised dtseries present, and in ``usable`` if given).
-    single_run:       only one eligible run; nothing to combine.
+    already_combined:     a run-less denoised dtseries exists that was built from >= 2 runs
+                          (or has no readable sidecar), in xcpd_dir or out_dir.
+    single_run_unlabeled: a run-less denoised dtseries exists but was built from ONE unlabeled run
+                          (newer XCP-D on a session with a single rest run); any run-labelled files
+                          next to it are leftovers from an earlier XCP-D run. Not combined.
+    newer_xcpd:           >= 2 runs, but processed by an XCP-D newer than 0.6 (design.tsv / ReHo /
+                          pconn present). Not combined: newer versions can keep (interpolated)
+                          high-motion frames in the denoised data and censor later, so 0.6-style
+                          concatenation + conmat may not match; check before handling these.
+    to_combine:           >= 2 eligible runs (denoised dtseries present, and in ``usable`` if given).
+    single_run:           only one eligible run; nothing to combine.
+    incomplete:           no run has a denoised dtseries.
     """
     xcpd_dir = Path(xcpd_dir)
     out_dir = Path(out_dir) if out_dir else None
@@ -79,20 +118,32 @@ def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path 
             continue
         sub, ses = func.parts[-3][4:], func.parts[-2][4:]
         combined = f"{prefix}_{DENOISED}"
-        exists = (func / combined).exists() or (out_dir is not None and (out_dir / func.relative_to(xcpd_dir) / combined).exists())
+        candidates = [func / combined]
+        if out_dir is not None:
+            candidates.append(out_dir / func.relative_to(xcpd_dir) / combined)
+        kinds = [runless_kind(c) for c in candidates if c.exists()]
         eligible = sorted(r for r, s in by_run.items() if DENOISED in s
                           and (usable is None or (sub, ses, r) in usable))
+        newer = sorted(r for r in eligible if any(x.endswith(NEWER_XCPD_MARKERS) for x in by_run[r]))
         dropped = sorted(set(by_run) - set(eligible))
-        note = f"runs not used: {','.join(dropped)}" if dropped else ""
-        if exists:
+        notes = [f"runs not used: {','.join(dropped)}"] if dropped else []
+        if kinds and all(k == "single" for k in kinds):
+            status = "single_run_unlabeled"
+            notes.append("run-less denoised = one unlabeled run; run-labelled files are leftovers")
+        elif kinds:
             status = "already_combined"
+            if "unknown" in kinds:
+                notes.append("run-less denoised has no readable sidecar")
+        elif len(eligible) >= 2 and newer:
+            status = "newer_xcpd"
+            notes.append(f"runs {','.join(newer)} processed by XCP-D > 0.6; not combined")
         elif len(eligible) >= 2:
             status = "to_combine"
         elif len(eligible) == 1:
             status = "single_run"
         else:
             status = "incomplete"
-        plan = SessionPlan(sub, ses, func, prefix, eligible, status, note=note)
+        plan = SessionPlan(sub, ses, func, prefix, eligible, status, note="; ".join(notes))
         if status == "to_combine":
             common = set.intersection(*(by_run[r] for r in eligible))
             plan.suffixes = {s: _action(s) for s in sorted(common)}
