@@ -12,9 +12,12 @@ Atlases available in our XCP-D 0.6.0 outputs:
   HCP    = 19 whole CIFTI subcortical structures (coarse)
   Gordon = 333 cortical parcels (not used below)
 
-Label tables were taken from the rsX-Analyzer copies (XCP-D 26.2 AtlasPack).
-VERIFY against <xcp_d>/sourcedata/atlases/ or the timeseries.tsv headers of our
-0.6.0 run before analysis (names/order should match, but confirm).
+VERIFIED 2026-11-18 against the atlas tables in our XCP-D 0.6.0 derivatives on cortex:
+  - atlas-4S356Parcels_dseg.tsv index+label columns identical
+    (md5 of `cut -f1,2` = 69d62e871fa2730bb4730f7da083245b)
+  - atlas-Tian_dseg.tsv identical (50 nodes, Scale III; note original typos
+    HIP-head-l-l, HIP-body-l, PUT-DA-l)
+Seed extraction code selects parcels by LABEL, not index.
 
 Format:  SEED_ID | ATLAS | LABEL(S) [index] | MNI centroid (x,y,z) | notes
 Priority: [P] = primary/a priori,  [S] = secondary/exploratory
