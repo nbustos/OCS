@@ -1,5 +1,13 @@
 """OCS resting-state analysis helpers."""
 
-from ocs.paths import XCPD_DIR
+from ocs.paths import XCPD_DIR, FMRIPREP_DIR, REPO_DIR, RESOURCES
+from ocs.discover import find_runs
+from ocs.motion import (dcan_thresholds, read_dcan_all, fd_summary, matching_thresholds,
+                        consensus_threshold)
+from ocs.roi import (load_dtseries, volume_grayordinates, mask_from_nifti, split_hemi,
+                     roi_qc, roi_timeseries)
 
-__all__ = ["XCPD_DIR"]
+__all__ = ["XCPD_DIR", "FMRIPREP_DIR", "REPO_DIR", "RESOURCES", "find_runs",
+           "dcan_thresholds", "read_dcan_all", "fd_summary", "matching_thresholds", "consensus_threshold",
+           "load_dtseries", "volume_grayordinates", "mask_from_nifti", "split_hemi",
+           "roi_qc", "roi_timeseries"]

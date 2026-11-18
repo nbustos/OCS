@@ -23,3 +23,6 @@ dfs/
 
 # Shared reference resources (public atlases, figures, summary tables) are tracked
 !resources/**
+
+# Notebook outputs (figures may contain participant-level results)
+notebooks/figures/

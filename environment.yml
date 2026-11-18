@@ -26,6 +26,7 @@ dependencies:
   - pingouin            # stats (paired tests, ICC, mixed ANOVA)
   - pyyaml
   - tqdm
+  - nbstripout          # strips notebook outputs on commit (public repo)
   - pip
   - pip:
       - netplotbrain>=0.3

@@ -38,6 +38,9 @@ fi
 echo ">> Installing ocs package (editable)"
 $RUN pip install -e "$REPO_DIR"
 
+echo ">> Enabling nbstripout git filter (notebook outputs are never committed)"
+(cd "$REPO_DIR" && $RUN nbstripout --install --attributes .gitattributes)
+
 echo ">> Registering Jupyter kernel"
 $RUN python -m ipykernel install --user --name "$ENV_NAME" --display-name "Python ($ENV_NAME)"
 
