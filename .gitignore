@@ -26,3 +26,6 @@ dfs/
 
 # Notebook outputs (figures may contain participant-level results)
 notebooks/figures/
+
+# Script logs (contain subject IDs)
+logs/

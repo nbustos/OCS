@@ -48,13 +48,17 @@ stays per run.
 
 ```bash
 python scripts/combine_runs.py                 # dry run: status of every session
-python scripts/combine_runs.py --run           # write to derivatives/xcp_d_combined/
+python scripts/combine_runs.py --run           # write combined files into xcp_d/ (next to the runs)
 python scripts/combine_runs.py --run --run-qc notebooks/dfs/run_qc.csv   # usable runs only
 ```
 
-The XCP-D folder is never modified. Existing outputs are not overwritten (`--overwrite`
-to force). Each output gets a JSON sidecar listing its source files, and a log CSV is
-written to the output folder.
+Combined files are added to the XCP-D `func/` folders with XCP-D's own run-less names
+(`--out-dir` to write elsewhere). **Nothing is ever overwritten**: each file is written to
+a hidden temp name and linked into place, which fails if the target exists (on shares
+without hard links, an exclusive create is used instead). Sessions XCP-D already combined
+are skipped. The combined denoised dtseries is written last, so an interrupted session is
+resumed on the next run (missing files only). Each output gets a JSON sidecar listing its
+source files; a log CSV goes to `logs/` (git-ignored).
 
 ## Data paths
 

@@ -6,11 +6,15 @@ Mirrors XCP-D 0.6.0's own concatenation (``xcp_d/workflows/concatenation.py``):
 - ``*_conmat.tsv`` is recomputed as ``DataFrame.corr()`` of the concatenated parcel time series
 - only runs with a denoised dtseries are used (XCP-D drops failed runs)
 Files that cannot be concatenated meaningfully (DCAN HDF5, QC CSVs, figures, JSON) are skipped.
+Nothing is ever overwritten: every file is written to a temp name and hard-linked into place.
 """
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -97,6 +101,35 @@ def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path 
     return plans
 
 
+def _write_new(out: Path, writer) -> None:
+    """Write via ``writer(tmp_path)`` then hard-link into place; never replaces an existing file.
+
+    os.link fails if ``out`` exists, so even a file created by someone else between the
+    existence check and the write is left untouched.
+
+    Network shares (e.g. SMB) may not support hard links; then the file is created with
+    O_CREAT|O_EXCL (also fails if it exists) and filled from the temp file. A partial file
+    from a failed copy is removed.
+    """
+    tmp = out.with_name(f".tmp_{uuid.uuid4().hex}_{out.name}")
+    try:
+        writer(tmp)
+        try:
+            os.link(tmp, out)
+        except FileExistsError:
+            raise
+        except OSError:                                   # hard links unsupported here
+            fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+            try:
+                with os.fdopen(fd, "wb") as dst, open(tmp, "rb") as src:
+                    shutil.copyfileobj(src, dst, 16 * 1024 * 1024)
+            except BaseException:
+                out.unlink(missing_ok=True)               # only ever our own just-created file
+                raise
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def _concat_cifti(paths: list[Path], out: Path) -> dict:
     imgs = [nib.load(str(p)) for p in paths]
     ax0 = [im.header.get_axis(0) for im in imgs]
@@ -108,7 +141,7 @@ def _concat_cifti(paths: list[Path], out: Path) -> dict:
         raise ValueError(f"TR differs across runs {steps}: {[p.name for p in paths]}")
     data = np.vstack([np.asarray(im.dataobj, dtype=np.float32) for im in imgs])
     series = nib.cifti2.SeriesAxis(start=0.0, step=ax0[0].step, size=data.shape[0], unit=ax0[0].unit)
-    nib.Cifti2Image(data, (series, ax1[0])).to_filename(str(out))
+    _write_new(out, lambda t: nib.Cifti2Image(data, (series, ax1[0])).to_filename(str(t)))
     return {"n_frames_per_run": [int(a.size) for a in ax0], "RepetitionTime": float(ax0[0].step)}
 
 
@@ -116,24 +149,31 @@ def _concat_tsv(paths: list[Path], out: Path) -> dict:
     dfs = [pd.read_table(p) for p in paths]
     if any(list(d.columns) != list(dfs[0].columns) for d in dfs[1:]):
         raise ValueError(f"Columns differ across runs: {[p.name for p in paths]}")
-    pd.concat(dfs, axis=0).to_csv(out, sep="\t", index=False, na_rep="n/a")
+    _write_new(out, lambda t: pd.concat(dfs, axis=0).to_csv(t, sep="\t", index=False, na_rep="n/a"))
     return {"n_rows_per_run": [len(d) for d in dfs]}
 
 
-def combine_session(plan: SessionPlan, out_root: Path, xcpd_dir: Path, overwrite: bool = False) -> list[dict]:
-    """Write the concatenated files for one session. Returns one log row per output."""
+def _order(item):
+    """Write order: data files, then conmats (need combined timeseries), then the combined
+    denoised dtseries LAST - it marks a session as combined, so an interrupted session is
+    picked up again on the next run and only its missing files are written."""
+    suffix, action = item
+    return (suffix == DENOISED, action == "conmat")
+
+
+def combine_session(plan: SessionPlan, out_root: Path, xcpd_dir: Path) -> list[dict]:
+    """Write the concatenated files for one session. Existing files are never replaced.
+    Returns one log row per output."""
     out_func = Path(out_root) / plan.func_dir.relative_to(xcpd_dir)
     out_func.mkdir(parents=True, exist_ok=True)
     log = []
-    # timeseries first, so conmats can be computed from the combined timeseries
-    order = sorted(plan.suffixes.items(), key=lambda kv: kv[1] == "conmat")
-    for suffix, action in order:
+    for suffix, action in sorted(plan.suffixes.items(), key=_order):
         if action == "skip":
             log.append(dict(file=suffix, action="skip"))
             continue
         srcs = [plan.func_dir / f"{plan.prefix}_run-{r}_{suffix}" for r in plan.runs]
         out = out_func / combined_name(srcs[0].name)
-        if out.exists() and not overwrite:
+        if out.exists():
             log.append(dict(file=out.name, action="exists_kept"))
             continue
         if action == "concat_cifti":
@@ -141,17 +181,22 @@ def combine_session(plan: SessionPlan, out_root: Path, xcpd_dir: Path, overwrite
         elif action == "concat_tsv":
             meta = _concat_tsv(srcs, out)
         else:  # conmat from the combined parcel timeseries, as XCP-D does
-            ts_name = combined_name(srcs[0].name).replace("_measure-pearsoncorrelation_conmat.tsv", "_timeseries.tsv")
-            ts_path = out_func / ts_name
+            ts_path = out_func / combined_name(srcs[0].name).replace(
+                "_measure-pearsoncorrelation_conmat.tsv", "_timeseries.tsv")
             if not ts_path.exists():
                 log.append(dict(file=out.name, action="skip_no_timeseries"))
                 continue
-            pd.read_table(ts_path).corr().to_csv(out, sep="\t", na_rep="n/a", index_label="Node")
+            corr = pd.read_table(ts_path).corr()
+            _write_new(out, lambda t: corr.to_csv(t, sep="\t", na_rep="n/a", index_label="Node"))
             meta = {"ComputedFrom": ts_path.name}
             srcs = [ts_path]
-        sidecar = {"Description": "Run-concatenated XCP-D 0.6 output (OCS scripts/combine_runs.py); "
-                                  "concatenation follows XCP-D 0.6.0 (plain concatenation in run order).",
-                   "Sources": [str(s) for s in srcs], "Runs": plan.runs, **meta}
-        out.with_name(out.name.split(".")[0] + ".json").write_text(json.dumps(sidecar, indent=2))
+        sidecar_path = out.with_name(out.name.split(".")[0] + ".json")
+        if sidecar_path.exists():
+            log.append(dict(file=sidecar_path.name, action="sidecar_exists_kept"))
+        else:
+            sidecar = {"Description": "Run-concatenated XCP-D 0.6 output (OCS scripts/combine_runs.py); "
+                                      "concatenation follows XCP-D 0.6.0 (plain concatenation in run order).",
+                       "Sources": [str(s) for s in srcs], "Runs": plan.runs, **meta}
+            _write_new(sidecar_path, lambda t: t.write_text(json.dumps(sidecar, indent=2)))
         log.append(dict(file=out.name, action=action, **{k: str(v) for k, v in meta.items()}))
     return log
