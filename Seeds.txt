@@ -1,0 +1,157 @@
+================================================================================
+OCS — CANDIDATE SEEDS FOR SEED-BASED CONNECTIVITY (XCP-D fsLR 91k dtseries)
+================================================================================
+Labels below are exactly as they appear in the XCP-D atlas label tables (and as
+column headers of *_atlas-<ATLAS>_timeseries.tsv). MNI coordinates are parcel
+centroids in MNI152NLin6Asym (from atlas-4S356Parcels_space-MNI152NLin6Asym_nodes.tsv).
+
+Atlases available in our XCP-D 0.6.0 outputs:
+  4S356  = Schaefer-300 (17-net names) + CIT168 subcortical (28) + HCP thalamus (14)
+           + HCP hippocampus/amygdala (4) + cerebellum (10)
+  Tian   = Tian subcortex Scale III (50 parcels; striatum/thalamus/amygdala/hipp. subdivisions)
+  HCP    = 19 whole CIFTI subcortical structures (coarse)
+  Gordon = 333 cortical parcels (not used below)
+
+Label tables were taken from the rsX-Analyzer copies (XCP-D 26.2 AtlasPack).
+VERIFY against <xcp_d>/sourcedata/atlases/ or the timeseries.tsv headers of our
+0.6.0 run before analysis (names/order should match, but confirm).
+
+Format:  SEED_ID | ATLAS | LABEL(S) [index] | MNI centroid (x,y,z) | notes
+Priority: [P] = primary/a priori,  [S] = secondary/exploratory
+
+
+--------------------------------------------------------------------------------
+A. VTA / MIDBRAIN DOPAMINE SYSTEM
+--------------------------------------------------------------------------------
+[P] VTA_L      | 4S356 | LH-SNc_PBP_VTA [307] | (-7,-19,-13) | CIT168 combined SNc + parabrachial pigmented n. + VTA
+[P] VTA_R      | 4S356 | RH-SNc_PBP_VTA [321] | ( 8,-19,-13) | same; consider bilateral mean (VTA_B) — tiny, noisy unilaterally
+[S] SNr_L      | 4S356 | LH-SNr [309]         | (-9,-16,-13) | control region: SN-like (dorsal striatum) vs VTA-like (NAc/vmPFC) profile
+[S] SNr_R      | 4S356 | RH-SNr [323]         | (11,-16,-13) |
+[S] RN_L/R     | 4S356 | LH-RN [308] / RH-RN [322] | (-4,-19,-9)/(6,-19,-9) | adjacent midbrain control (motor), helps check specificity
+[S] Hb_L/R     | 4S356 | LH-HN [311] / RH-HN [325] | (-3,-24,3)/(4,-23,2) | habenula: inhibits VTA, aversion/reward-omission; very small (few voxels)
+[S] HTH_L/R    | 4S356 | LH-HTH [312] / RH-HTH [326] | (-4,-4,-10)/(5,-4,-9) | lateral hypothalamus → VTA input
+[S] VeP_L/R    | 4S356 | LH-VeP [310] / RH-VeP [324] | (-11,3,-9)/(12,4,-8) | ventral pallidum: VTA reciprocal loop
+
+Alternative VTA definitions (if the CIT168 composite is too SN-contaminated):
+  - CIT168 VTA-only probabilistic map (Pauli et al., 2018) — not split out in
+    XCP-D's 4S; would need the original atlas resampled to 91k subcortical voxels.
+  - Murty et al. (2014, NeuroImage) probabilistic VTA/SN atlas — designed for
+    VTA-vs-SN resting-state separation.
+  - Either can be applied directly to the dtseries subcortical voxels (no rerun of XCP-D).
+
+VTA caveats:
+  - ~10–20 voxels at 2 mm; low tSNR; strong cardiac/respiratory pulsatility near
+    the interpeduncular cistern. Use the UNSMOOTHED dtseries (desc-denoised) to
+    extract the seed, the smoothed one for the target map.
+  - XCP-D drops parcels with poor coverage (NaN column). Check the VTA/HN/MN
+    columns in atlas-4S356Parcels_timeseries.tsv for NaNs per run.
+  - Expected VTA profile (sanity check): NAc/ventral striatum, vmPFC/mOFC,
+    hippocampus, ventral pallidum, hypothalamus.
+
+
+--------------------------------------------------------------------------------
+B. OCD — STRIATUM (core of CSTC models)
+--------------------------------------------------------------------------------
+Ventral striatum / nucleus accumbens (affective/limbic loop; DBS VC/VS target)
+[P] NAc_L/R        | 4S356 | LH-NAC [303] / RH-NAC [317] | (-10,8,-10)/(10,9,-9) | primary VS seed; pairs with VTA
+[P] NAcShell_L/R   | Tian  | NAc-shell-lh [47] / NAc-shell-rh [22] | — | limbic; VTA-recipient
+[S] NAcCore_L/R    | Tian  | NAc-core-lh [48] / NAc-core-rh [23]   | — |
+[P] CauVA_L/R      | Tian  | CAU-VA-lh [40] / CAU-VA-rh [15] | — | ventral/anterior caudate — OFC-loop (Harrison 2009 "ventral caudate")
+
+Dorsal striatum (associative / habit loops)
+[P] CauDA_L/R      | Tian  | CAU-DA-lh [41] / CAU-DA-rh [16] | — | dorsal caudate — dlPFC loop (cognitive control)
+[S] Caudate_L/R    | 4S356 | LH-Ca [302] / RH-Ca [316] | (-14,6,9)/(15,7,9) | whole caudate (coarser alternative)
+[S] PutVA_L/R      | Tian  | PUT-VA-lh [36] / PUT-VA-rh [11] | — | ventral-anterior putamen — limbic/associative border
+[S] PutDA_L/R      | Tian  | PUT-DA-l [37] / PUT-DA-rh [12]  | — | dorsal-anterior putamen — associative
+[P] PutDP_L/R      | Tian  | PUT-DP-lh [39] / PUT-DP-rh [14] | — | dorsal-posterior putamen — sensorimotor/habit loop (habit bias in OCD)
+[S] PutVP_L/R      | Tian  | PUT-VP-lh [38] / PUT-VP-rh [13] | — |
+
+Literature sphere seeds (Di Martino et al., 2008; used in OCD by Harrison et al.,
+2009 JAMA Psychiatry). MNI, typically 3.5–4 mm radius. Verify coordinates against
+the original papers before use.
+[S] VSi   ventral striatum inferior (NAc)  (±9,  9, -8)
+[S] VSs   ventral striatum superior        (±10, 15,  0)
+[S] DC    dorsal caudate                   (±13, 15,  9)
+[S] DCP   dorsal caudal putamen            (±28,  1,  3)
+[S] DRP   dorsal rostral putamen           (±25,  8,  6)
+[S] VRP   ventral rostral putamen          (±20, 12, -3)
+
+
+--------------------------------------------------------------------------------
+C. OCD — PALLIDUM / SUBTHALAMUS / EXTENDED AMYGDALA (incl. DBS targets)
+--------------------------------------------------------------------------------
+[P] STN_L/R   | 4S356 | LH-STH [314] / RH-STH [328] | (-10,-13,-7)/(12,-12,-7) | subthalamic nucleus (CIT168 "STH"); anteromedial STN = OCD DBS target
+[S] GPe_L/R   | 4S356 | LH-GPe [305] / RH-GPe [319] | (-19,-2,0)/(20,-1,0) | indirect pathway
+[S] GPi_L/R   | 4S356 | LH-GPi [306] / RH-GPi [320] | (-16,-5,-4)/(18,-4,-4) | BG output nucleus
+[S] BNST_L/R  | 4S356 | LH-EXA [304] / RH-EXA [318] | (-7,2,-1)/(8,3,0) | extended amygdala incl. BNST — OCD DBS target, anxiety
+[S] VeP_L/R   | (see section A)
+
+
+--------------------------------------------------------------------------------
+D. OCD — THALAMUS
+--------------------------------------------------------------------------------
+[P] MD_L/R    | 4S356 | LH-Medio_Dorsal [331] / RH-Medio_Dorsal [338] | (-6,-17,3)/(6,-15,3) | mediodorsal — OFC/ACC relay of CSTC loop
+[S] AntTh_L/R | 4S356 | LH-Anterior [330] / RH-Anterior [337] | (-7,-6,2)/(8,-5,4) | anterior thalamus — ALIC/capsulotomy circuit
+[S] VA_L/R    | 4S356 | LH-Ventral_Anterior [334] / RH-Ventral_Anterior [341] | (-11,-10,11)/(12,-11,12) | BG-recipient motor/premotor relay
+[S] Tian thalamic alternatives: THA-DAm (dorsoanterior-medial ≈ MD/anterior), THA-VAs, THA-VAi, THA-DP
+      (lh indices 34, 33, 32, 46; rh 9, 8, 7, 21)
+
+
+--------------------------------------------------------------------------------
+E. OCD — LIMBIC SUBCORTICAL
+--------------------------------------------------------------------------------
+[P] Amy_L/R   | 4S356 | LH_Amygdala [344] / RH_Amygdala [346] | (-23,-5,-20)/(24,-4,-20) | fear/threat; altered amygdala–vmPFC in OCD
+[S] lAmy/mAmy | Tian  | lAMY-lh [44], mAMY-lh [45] / lAMY-rh [19], mAMY-rh [20] | — | lateral (BLA-like) vs medial (CeA-like)
+[S] Hipp_L/R  | 4S356 | LH_Hippocampus [343] / RH_Hippocampus [345] | (-25,-22,-14)/(26,-21,-14) | VTA–hippocampal loop; Tian head/body/tail available
+
+
+--------------------------------------------------------------------------------
+F. OCD — CORTICAL (4S356 Schaefer-300; anatomical assignment from centroids)
+--------------------------------------------------------------------------------
+Schaefer names are network-based; the anatomical labels below come from the
+centroid coordinates. Usually take the mean of the listed parcels per seed.
+
+Medial OFC / vmPFC (affective loop; VS/VTA target)
+[P] mOFC_L | LH_Limbic_OFC_2 [87] (-8,24,-20); LH_Limbic_OFC_3 [88] (-11,48,-21)
+[P] mOFC_R | RH_Limbic_OFC_3 [240] (4,26,-21); RH_Limbic_OFC_1 [238] (13,26,-21); RH_Limbic_OFC_4 [241] (11,52,-21)
+[P] vmPFC/sgACC-adj | LH_Default_PFC_2 [126] (-6,35,-10); RH_Default_PFCdPFCm_1 [285] (5,39,-10)
+      (no parcel sits exactly on sgACC/BA25 ≈ (±4,20,-10); RH_Limbic_OFC_3 is closest — consider sphere seed)
+
+Lateral OFC (hyperactive in OCD; VS–lOFC hyperconnectivity, Harrison 2009)
+[P] lOFC_L | LH_Limbic_OFC_1 [86] (-24,22,-20); LH_Cont_OFC_1 [101] (-32,41,-13); LH_Default_PFC_1 [125] (-35,21,-13)
+[P] lOFC_R | RH_Limbic_OFC_2 [239] (25,21,-20); RH_Cont_PFCl_1 [253] (30,43,-14); RH_Default_PFCv_1 [282] (43,29,-15)
+
+Pregenual ACC
+[S] pgACC | LH_Default_PFC_7 [131] (-6,44,8); RH_Default_PFCdPFCm_3 [287] (8,43,5)
+
+Dorsal ACC / anterior MCC (error/conflict monitoring; ERN hyperactivity in OCD)
+[P] dACC  | LH_Default_PFC_10 [134] (-6,30,24); RH_Default_PFCdPFCm_6 [290] (6,25,18); RH_Cont_PFCmp_1 [269] (7,30,28)
+[P] aMCC  | LH_Cont_Cing_2 [111] (-3,6,29); RH_Cont_Cing_2 [268] (5,1,30); LH_SalVentAttn_Med_1 [82] (-6,9,41); RH_SalVentAttn_Med_1 [232] (7,9,41)
+
+Pre-SMA (inhibitory control; OCD TMS target)
+[S] preSMA | RH_Cont_PFCmp_2 [270] (5,19,54); LH_Default_PFC_18 [142] (-6,10,64); LH_Cont_PFCmp_1 [112] (-4,27,47)
+
+Dorsolateral PFC (cognitive control; dorsal caudate loop; TMS target)
+[S] dlPFC_L | LH_Cont_PFCl_5 [106] (-38,33,35); LH_Cont_PFCl_4 [105] (-45,21,25)
+[S] dlPFC_R | RH_Cont_PFCl_10 [262] (39,33,38); RH_Cont_PFCl_7 [259] (35,45,27); RH_Cont_PFCl_6 [258] (48,30,21)
+
+Anterior insula (salience; interoception/disgust)
+[S] aIns_L | LH_SalVentAttn_FrOperIns_2 [75] (-33,24,-1); LH_SalVentAttn_FrOperIns_3 [76] (-33,19,8)
+[S] aIns_R | RH_SalVentAttn_FrOperIns_3 [228] (38,21,3); RH_Cont_PFCv_1 [252] (34,21,-9)
+
+Posterior DMN (control seed / DMN–salience imbalance)
+[S] PCC | LH_Default_pCunPCC_6 [148] (-5,-38,36); RH_Default_pCunPCC_4 [298] (6,-37,36)
+
+
+--------------------------------------------------------------------------------
+G. SUGGESTED MINIMAL A PRIORI SET (to limit multiple comparisons)
+--------------------------------------------------------------------------------
+ 1. VTA (bilateral CIT168 SNc_PBP_VTA)         -> whole brain
+ 2. NAc (CIT168; or Tian NAc-shell)            -> whole brain   [VS–OFC / VS–VTA]
+ 3. Ventral caudate (Tian CAU-VA)              -> whole brain   [affective CSTC loop]
+ 4. Dorsal caudate (Tian CAU-DA)               -> whole brain   [associative loop]
+ 5. Dorsal-posterior putamen (Tian PUT-DP)     -> whole brain   [habit/sensorimotor loop]
+ 6. Mediodorsal thalamus (4S HCP MD)           -> whole brain
+ 7. STN (CIT168 STH)                           -> whole brain   [DBS-relevant]
+ 8. Amygdala (4S HCP)                          -> whole brain
+Bilateral (L+R mean) per seed unless laterality is a hypothesis; then L/R separately.
