@@ -92,7 +92,7 @@ def plan_sessions(xcpd_dir: str | Path, task: str = "rest", out_dir: str | Path 
     already_combined:     a run-less denoised dtseries exists that was built from >= 2 runs
                           (or has no readable sidecar), in xcpd_dir or out_dir.
     single_run_unlabeled: a run-less denoised dtseries exists but was built from ONE unlabeled run
-                          (newer XCP-D on a session with a single rest run); any run-labelled files
+                          (session had a single rest run without a run label); any run-labelled files
                           next to it are leftovers from an earlier XCP-D run. Not combined.
     to_combine:           >= 2 eligible runs (denoised dtseries present, and in ``usable`` if given).
     single_run:           only one eligible run; nothing to combine.
