@@ -23,23 +23,40 @@ def volume_grayordinates(bm) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return idx, xyz, np.asarray(bm.name)[idx]
 
 
-def mask_from_nifti(img_or_path, bm, threshold: float = 0.5, labels=None) -> np.ndarray:
+def mask_from_nifti(img_or_path, bm, threshold: float = 0.5, labels=None,
+                    min_coverage: float | None = None, subsamples: int = 5) -> np.ndarray:
     """Grayordinate indices whose MNI position falls in a NIfTI ROI.
 
-    Probabilistic map: value >= threshold. Label map: value in ``labels``.
-    Sampling is nearest-voxel at each grayordinate centre, so the NIfTI may be on
-    any grid as long as it is in the same MNI space as the CIFTI volume (NLin6Asym).
+    Probabilistic/binary map: value >= threshold. Label map: value in ``labels``.
+    The NIfTI may be on any grid as long as it is in the same MNI space as the CIFTI
+    volume (NLin6Asym).
+
+    min_coverage=None (default): nearest-voxel sampling at each grayordinate centre.
+    min_coverage=f: each 2 mm grayordinate voxel is sampled on a ``subsamples``^3 grid and kept if
+    at least fraction f of it lies in the ROI. Use for masks much finer than 2 mm (e.g. 1 mm
+    NM-MRI masks), where centre sampling keeps only a handful of grayordinates.
     """
     img = nib.load(str(img_or_path)) if isinstance(img_or_path, (str, Path)) else img_or_path
     data = np.asarray(img.dataobj)
     if data.ndim == 4:
         raise ValueError("Pass a 3D image (index a single volume of 4D atlases first)")
-    idx, xyz, _ = volume_grayordinates(bm)
-    vox = np.rint(nib.affines.apply_affine(np.linalg.inv(img.affine), xyz)).astype(int)
-    inside = np.all((vox >= 0) & (vox < np.array(data.shape)), axis=1)
-    vals = np.zeros(len(idx), dtype=float)
-    vals[inside] = data[tuple(vox[inside].T)]
-    keep = np.isin(vals, list(labels)) if labels is not None else vals >= threshold
+    idx = np.where(bm.volume_mask)[0]
+    ijk = bm.voxel[idx].astype(float)
+    if min_coverage is None:
+        offsets = np.zeros((1, 3))
+    else:
+        o = (np.arange(subsamples) + 0.5) / subsamples - 0.5
+        offsets = np.stack(np.meshgrid(o, o, o, indexing="ij"), -1).reshape(-1, 3)
+    inv = np.linalg.inv(img.affine) @ bm.affine                       # CIFTI voxel -> NIfTI voxel
+    hits = np.zeros(len(idx))
+    for off in offsets:
+        vox = np.rint(nib.affines.apply_affine(inv, ijk + off)).astype(int)
+        inside = np.all((vox >= 0) & (vox < np.array(data.shape)), axis=1)
+        vals = np.zeros(len(idx))
+        vals[inside] = data[tuple(vox[inside].T)]
+        hits += np.isin(vals, list(labels)) if labels is not None else vals >= threshold
+    frac = hits / len(offsets)
+    keep = frac >= min_coverage if min_coverage is not None else frac > 0
     return idx[keep]
 
 

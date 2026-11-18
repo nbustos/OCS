@@ -30,3 +30,6 @@ notebooks/figures/
 # Script logs (contain subject IDs)
 logs/
 
+
+# Masks that must not be published (e.g. NM-MRI masks shared on request)
+resources/private/
