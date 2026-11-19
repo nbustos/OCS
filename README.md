@@ -24,9 +24,11 @@ conda activate ocs
 
 `notebooks/OCS_REST_main.ipynb` (kernel **Python (ocs)**):
 
-1. Inventory of all XCP-D run files
+1. Inventory of all XCP-D run files, with a sample overview figure (subjects / sessions / runs found,
+   runs missing motion files)
 2. Header checks: TR, run lengths, which FD threshold XCP-D applied
-3. Motion QC from the DCAN HDF5 files and run/session inclusion
+3. Motion QC from the DCAN HDF5 files and run/session inclusion (runs and sessions need >= 4 min of
+   usable data); the sample overview is redrawn with the counts passing motion QC
 4. ROI QC for seed ROIs (coverage, signal amplitude, homogeneity, global-signal coupling, tSNR)
 5. Final analysis sample (`dfs/final_sample.csv`, `dfs/run_qc.csv`)
 6. One analysis input per session (`dfs/analysis_inputs.csv`): the combined-runs file by default,
@@ -37,7 +39,7 @@ conda activate ocs
    (CELL 1). Phenotypes: one row per subject x timepoint in `notebooks/pheno/pheno.csv`
    (git-ignored; format in `resources/pheno_template.csv`, or set `OCS_PHENO`).
 
-QC thresholds are set in CELL 1 (and CELL 10 for ROI). Tables go to `notebooks/dfs/`
+QC thresholds are set in CELL 1 (and CELL 12 for ROI). Tables go to `notebooks/dfs/`
 and figures to `notebooks/figures/`; both are git-ignored. **Notebook outputs are
 stripped on commit** by `nbstripout` (enabled by `setup_env.sh`), so results and
 subject IDs never reach this public repo. Re-run `./setup_env.sh` after pulling if
@@ -83,7 +85,7 @@ NLin6Asym. Murty 2014 is on that grid; CIT168 is used via a copy warped from 200
 (`python scripts/warp_cit168_to_nlin6.py`, see `resources/README.md`). The NM-MRI masks (SPM DARTEL
 "MNI", Cassidy 2019) fit the NLin6Asym T1 within 1 mm; their SNc/SNr/VTA/PBP/LC files carry an
 x-mirrored header relative to `SN_mask`/`CC_mask` (same voxel array), so the notebook reads them with
-`SN_mask`'s header (`affine_from` in `ROIS`). CELL 12 Fig 3 overlays the midbrain masks on the template.
+`SN_mask`'s header (`affine_from` in `ROIS`). CELL 14 Fig 3 overlays the midbrain masks on the template.
 
 ## Data paths
 
