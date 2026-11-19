@@ -23,6 +23,22 @@ def volume_grayordinates(bm) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return idx, xyz, np.asarray(bm.name)[idx]
 
 
+def load_roi_image(path: str | Path, affine_from: str | Path | None = None) -> nib.Nifti1Image:
+    """Load a ROI NIfTI, optionally replacing its affine with that of another image on the same grid.
+
+    Use when masks that share one voxel array were saved with inconsistent headers (the NM-MRI
+    masks: SNc/SNr/VTA/PBP/LC carry an x-mirrored header relative to SN_mask/CC_mask, whose header
+    is SPM's DARTEL output grid). Only the header changes; the array is used as stored.
+    """
+    img = nib.load(str(path))
+    if affine_from is None:
+        return img
+    ref = nib.load(str(affine_from))
+    if ref.shape[:3] != img.shape[:3]:
+        raise ValueError(f"affine_from grid {ref.shape[:3]} != ROI grid {img.shape[:3]}")
+    return nib.Nifti1Image(np.asarray(img.dataobj), ref.affine)
+
+
 def mask_from_nifti(img_or_path, bm, threshold: float = 0.5, labels=None,
                     min_coverage: float | None = None, subsamples: int = 5) -> np.ndarray:
     """Grayordinate indices whose MNI position falls in a NIfTI ROI.

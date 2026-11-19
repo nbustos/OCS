@@ -12,7 +12,16 @@ OSF and fetched with `nilearn.datasets.fetch_atlas_pauli_2017`.
 |---|---|---|
 | `CIT168_prob_MNI152NLin2009cAsym_res-1mm.nii.gz` | 4D probabilistic maps, 16 volumes | MNI152NLin2009cAsym, 1 mm (193×229×193) |
 | `CIT168_det_MNI152NLin2009cAsym_res-0.7mm.nii.gz` | 3D deterministic labels | MNI152NLin2009cAsym, 0.7 mm |
+| `CIT168_det_MNI152NLin6Asym_res-0.7mm.nii.gz` | the det labels warped to NLin6Asym (**used by the notebook**) | MNI152NLin6Asym, 0.7 mm (same box) |
 | `labels.txt` | volume index → nucleus | |
+
+The CIFTI 91k subcortical voxels are in MNI152NLin6Asym, so the notebook uses the warped copy, made
+by `scripts/warp_cit168_to_nlin6.py` with templateflow's 2009cAsym↔NLin6Asym ANTs transform
+(nearest-neighbour labels; `src/ocs/xfm.py` applies the transform without ANTs). The script checks
+the direction on the template T1s (2009c T1 vs NLin6 T1: r 0.69 unwarped → 0.82 warped) and refuses
+to write if the warp does not help. Note: templateflow's files map *2009c points to NLin6 points*;
+applied naively in the direction their names suggest, the alignment gets worse. In the midbrain the
+templates differ by ~0.5–0.9 mm, which changed 1/4 of the SNc+PBP+VTA grayordinates (84 → 67, Dice 0.74).
 
 Label order (prob volume index 0–15; det label value = index + 1, 0 = background):
 Pu, Ca, NAC, EXA, GPe, GPi, **SNc**, RN, SNr, **PBP**, **VTA**, VeP, HN, HTH, MN, STH.

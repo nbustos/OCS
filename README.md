@@ -43,7 +43,7 @@ stripped on commit** by `nbstripout` (enabled by `setup_env.sh`), so results and
 subject IDs never reach this public repo. Re-run `./setup_env.sh` after pulling if
 `nbstripout --status` says it is not installed.
 
-Reusable code lives in `src/ocs/` (`discover.py`, `motion.py`, `roi.py`).
+Reusable code lives in `src/ocs/` (`discover.py`, `motion.py`, `roi.py`, `seedfc.py`, `glm.py`, `xfm.py`).
 
 ## Combining runs (run-01 + run-02)
 
@@ -74,6 +74,16 @@ are skipped. A run-less denoised file is only treated as "already combined" if i
 `single_run_unlabeled`. The combined denoised dtseries is written last, so an interrupted session is
 resumed on the next run (missing files only). Each output gets a JSON sidecar listing its
 source files; a log CSV goes to `logs/` (git-ignored).
+
+## ROI masks and template space
+
+The CIFTI 91k subcortical voxels are in MNI152NLin6Asym (2 mm) and fMRIPrep has already registered
+each subject there, so masks need no per-subject warping — but every NIfTI ROI must be in
+NLin6Asym. Murty 2014 is on that grid; CIT168 is used via a copy warped from 2009cAsym
+(`python scripts/warp_cit168_to_nlin6.py`, see `resources/README.md`). The NM-MRI masks (SPM DARTEL
+"MNI", Cassidy 2019) fit the NLin6Asym T1 within 1 mm; their SNc/SNr/VTA/PBP/LC files carry an
+x-mirrored header relative to `SN_mask`/`CC_mask` (same voxel array), so the notebook reads them with
+`SN_mask`'s header (`affine_from` in `ROIS`). CELL 12 Fig 3 overlays the midbrain masks on the template.
 
 ## Data paths
 
