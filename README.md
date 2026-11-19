@@ -34,7 +34,9 @@ conda activate ocs
 6. One analysis input per session (`dfs/analysis_inputs.csv`): the combined-runs file by default,
    or the best single run by motion with `SESSION_INPUT = 'best_run'` (CELL 1)
 
-7. Seed-based connectivity (`derivatives/seedfc/`, git-ignored) for every seed, then group
+7. Seed-based connectivity (`derivatives/seedfc/`, git-ignored) for every seed, plus seed ↔ parcel
+   (ROI-to-ROI) connectivity with the tripartite networks (fronto-parietal control, default mode, salience;
+   Schaefer 7-network parcels of XCP-D's 4S356 atlas), then group
    differences, pre -> post change and regressors (age, symptom severity) defined in `MODELS`
    (CELL 1). Phenotypes: one row per subject x timepoint in `notebooks/pheno/pheno.csv`
    (git-ignored; format in `resources/pheno_template.csv`, or set `OCS_PHENO`).
