@@ -1,0 +1,5 @@
+subject,timepoint,group,age,sex,ybocs
+example01,1,OCD,25,F,28
+example01,2,OCD,25,F,15
+example02,1,HC,27,M,0
+example02,2,HC,27,M,1

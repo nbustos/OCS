@@ -32,6 +32,11 @@ conda activate ocs
 6. One analysis input per session (`dfs/analysis_inputs.csv`): the combined-runs file by default,
    or the best single run by motion with `SESSION_INPUT = 'best_run'` (CELL 1)
 
+7. Seed-based connectivity (`derivatives/seedfc/`, git-ignored) for every seed, then group
+   differences, pre -> post change and regressors (age, symptom severity) defined in `MODELS`
+   (CELL 1). Phenotypes: one row per subject x timepoint in `notebooks/pheno/pheno.csv`
+   (git-ignored; format in `resources/pheno_template.csv`, or set `OCS_PHENO`).
+
 QC thresholds are set in CELL 1 (and CELL 10 for ROI). Tables go to `notebooks/dfs/`
 and figures to `notebooks/figures/`; both are git-ignored. **Notebook outputs are
 stripped on commit** by `nbstripout` (enabled by `setup_env.sh`), so results and

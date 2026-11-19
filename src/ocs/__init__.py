@@ -6,10 +6,11 @@ from ocs.motion import (dcan_thresholds, read_dcan_all, fd_summary, matching_thr
                         consensus_threshold)
 from ocs.roi import (load_dtseries, volume_grayordinates, mask_from_nifti, split_hemi,
                      roi_qc, roi_timeseries)
+from ocs import glm, viz
 from ocs.seedfc import seed_corr, write_dscalar, read_dscalar, cortex_to_surface
 
 __all__ = ["XCPD_DIR", "FMRIPREP_DIR", "REPO_DIR", "RESOURCES", "find_runs", "find_combined",
            "dcan_thresholds", "read_dcan_all", "fd_summary", "matching_thresholds", "consensus_threshold",
            "load_dtseries", "volume_grayordinates", "mask_from_nifti", "split_hemi",
            "roi_qc", "roi_timeseries",
-           "seed_corr", "write_dscalar", "read_dscalar", "cortex_to_surface"]
+           "seed_corr", "write_dscalar", "read_dscalar", "cortex_to_surface", "glm", "viz"]
