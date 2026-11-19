@@ -29,7 +29,7 @@ conda activate ocs
 2. Header checks: TR, run lengths, which FD threshold XCP-D applied
 3. Motion QC from the DCAN HDF5 files and run/session inclusion (runs and sessions need >= 4 min of
    usable data); the sample overview is redrawn with the counts passing motion QC
-4. ROI QC for seed ROIs (coverage, signal amplitude, homogeneity, global-signal coupling, tSNR)
+4. ROI QC for seed ROIs (coverage, signal amplitude, homogeneity, global-signal coupling); XCP-D outputs only
 5. Final analysis sample (`dfs/final_sample.csv`, `dfs/run_qc.csv`)
 6. One analysis input per session (`dfs/analysis_inputs.csv`): the combined-runs file by default,
    or the best single run by motion with `SESSION_INPUT = 'best_run'` (CELL 1)
