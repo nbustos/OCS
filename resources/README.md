@@ -56,6 +56,17 @@ NeuroVault metadata.
   Resting state networks distinguish human ventral tegmental area from substantia
   nigra. *NeuroImage* 100:580–589. https://doi.org/10.1016/j.neuroimage.2014.06.047
 
+## atlases/Schaefer2018
+
+`Schaefer2018_300Parcels_7Networks_order_FSLMNI152_2mm.Centroid_RAS.csv`: MNI (FSL MNI152 2 mm) centroid of each
+of the 300 cortical parcels, in the same order and with the same names (minus the `7Networks_` prefix) as the
+cortical columns of XCP-D's `4S356Parcels` time series. Used to place parcels on the glass brain (notebook CELL 20).
+
+- Source: CBIG repository, `stable_projects/brain_parcellation/Schaefer2018_LocalGlobal/Parcellations/MNI/Centroid_coordinates/`
+  (https://github.com/ThomasYeoLab/CBIG; MIT license)
+- Cite: Schaefer A, Kong R, Gordon EM, et al. (2018). Local-global parcellation of the human cerebral cortex from
+  intrinsic functional connectivity MRI. *Cerebral Cortex* 28:3095–3114. https://doi.org/10.1093/cercor/bhx179
+
 ## figures/ and vta_atlas_metrics.csv
 
 Output of the VTA atlas comparison notebook (`OCS_VTA_atlas_compare.ipynb`):
