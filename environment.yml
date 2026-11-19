@@ -26,6 +26,7 @@ dependencies:
   - pingouin            # stats (paired tests, ICC, mixed ANOVA)
   - pyyaml
   - tqdm
+  - joblib              # parallel per-run / per-session loops (N_JOBS in the notebook)
   - nbstripout          # strips notebook outputs on commit (public repo)
   - pip
   - pip:
