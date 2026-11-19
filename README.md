@@ -43,7 +43,9 @@ conda activate ocs
 
 QC thresholds are set in CELL 1 (and CELL 12 for ROI). The per-run ROI QC (CELL 11) and per-session seed maps
 (CELL 17) run in parallel with `N_JOBS` workers (CELL 1; default half the cores, max 16, ~1-2 GB RAM each;
-override with `export OCS_N_JOBS=24`). Tables go to `notebooks/dfs/`
+override with `export OCS_N_JOBS=24`).
+Seed maps already in `derivatives/seedfc/` are reused when their inputs match (`RECOMPUTE_SEEDFC = False`,
+CELL 1), so after a restart run CELL 1 -> 2 -> 10 -> 17 and continue; only new or changed sessions are computed. Tables go to `notebooks/dfs/`
 and figures to `notebooks/figures/`; both are git-ignored. **Notebook outputs are
 stripped on commit** by `nbstripout` (enabled by `setup_env.sh`), so results and
 subject IDs never reach this public repo. Re-run `./setup_env.sh` after pulling if
