@@ -1,6 +1,6 @@
 """OCS resting-state analysis helpers."""
 
-from ocs.paths import XCPD_DIR, FMRIPREP_DIR, REPO_DIR, RESOURCES
+from ocs.paths import XCPD_DIR, FMRIPREP_DIR, REPO_DIR, RESOURCES, NM_MASKS_DIR, nm_mask
 from ocs.discover import find_runs, find_combined
 from ocs.motion import (dcan_thresholds, read_dcan_all, fd_summary, matching_thresholds,
                         consensus_threshold)
@@ -9,7 +9,7 @@ from ocs.roi import (load_dtseries, volume_grayordinates, load_roi_image, mask_f
 from ocs import glm, viz
 from ocs.seedfc import seed_corr, write_dscalar, read_dscalar, cortex_to_surface
 
-__all__ = ["XCPD_DIR", "FMRIPREP_DIR", "REPO_DIR", "RESOURCES", "find_runs", "find_combined",
+__all__ = ["XCPD_DIR", "FMRIPREP_DIR", "REPO_DIR", "RESOURCES", "NM_MASKS_DIR", "nm_mask", "find_runs", "find_combined",
            "dcan_thresholds", "read_dcan_all", "fd_summary", "matching_thresholds", "consensus_threshold",
            "load_dtseries", "volume_grayordinates", "load_roi_image", "mask_from_nifti", "split_hemi",
            "roi_qc", "roi_timeseries",

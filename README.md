@@ -102,4 +102,8 @@ per machine with:
 export OCS_XCPD_DIR=/path/to/derivatives/xcp_d
 ```
 
+The NM-MRI masks (not in this repo) are read from the Synology `NM/Masks` folder on cortex when it is
+mounted, otherwise from the git-ignored `resources/private/akili_NM_masks/`; `.nii` or `.nii.gz` both work.
+Override with `export OCS_NM_MASKS=/path/to/Masks`.
+
 No participant data is tracked in this repo (see `.gitignore`).
